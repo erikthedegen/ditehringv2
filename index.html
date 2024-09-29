@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Image Dithering Application</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            font-family: 'Roboto', sans-serif;
+            overflow-x: hidden;
+            background-color: #121212;
+            color: #ffffff;
+        }
+
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .controls, .canvas-container {
+            background-color: rgba(30, 30, 30, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .controls {
+            width: 300px;
+        }
+
+        .file-upload {
+            position: relative;
+            border: 2px dashed #4a4a4a;
+            border-radius: 5px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .file-upload:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .file-upload input[type="file"] {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .slider-container {
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 4px;
+            border-radius: 2px;
+            background: #4a4a4a;
+            outline: none;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+        .slider:hover {
+            opacity: 1;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #bb86fc;
+            cursor: pointer;
+        }
+
+        .slider::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #bb86fc;
+            cursor: pointer;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .slider-value {
+            font-weight: bold;
+            color: #bb86fc;
+        }
+
+        .reset-dot {
+            width: 6px;
+            height: 6px;
+            background-color: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            cursor: pointer;
+            display: none;
+        }
+
+        .reset-dot::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+            background-color: transparent;
+            border-radius: 50%;
+        }
+
+        select {
+            width: 100%;
+            margin: 10px 0;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            background-color: #2e2e2e;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        #exportButton {
+            width: 100%;
+            margin: 10px 0;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            background-color: #000000;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.1s ease;
+            box-shadow: 0 4px 0 #333;
+        }
+
+        #exportButton:active {
+            top: 4px;
+            box-shadow: 0 0 0 #333;
+        }
+
+        #resetButton {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 10px;
+            margin-left: 20px;
+        }
+
+        canvas {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #333;
+            border-radius: 5px;
+        }
+
+        .canvas-container {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .canvas-container p {
+            text-align: center;
+            margin-top: 10px;
+            color: #ffffff;
+        }
+
+        #colorPreserve {
+            margin-right: 10px;
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .drag-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .drag-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .drag-message {
+            font-size: 24px;
+            color: #fff;
+            text-align: center;
+        }
+
+        /* Hide scrollbar */
+        ::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Twitter icon */
+        .twitter-icon {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .controls, .canvas-container {
+                width: 100%;
+                max-width: 90%;
+            }
+
+            .twitter-icon {
+                bottom: 10px;
+                left: 10px;
+                width: 24px;
+                height: 24px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .controls, .canvas-container {
+                padding: 15px;
+            }
+
+            .file-upload {
+                padding: 15px;
+            }
+
+            #exportButton, #resetButton, select {
+                font-size: 14px;
+            }
+
+            .slider-label, .checkbox-container {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="controls">
+            <div class="file-upload">
+                <input type="file" id="imageInput" accept="image/*">
+                <span>Select or drop in a file</span>
+            </div>
+            <div class="slider-container">
+                <div class="slider-label">
+                    <label for="scaleSlider">Scale</label>
+                    <span id="scaleValue" class="slider-value">1.0</span>
+                </div>
+                <input type="range" id="scaleSlider" class="slider" min="1" max="10" value="1" step="0.1">
+                <div class="reset-dot" data-default="1"></div>
+            </div>
+            <div class="slider-container">
+                <div class="slider-label">
+                    <label for="contrastSlider">Contrast</label>
+                    <span id="contrastValue" class="slider-value">1.00</span>
+                </div>
+                <input type="range" id="contrastSlider" class="slider" min="0" max="2" value="1" step="0.01">
+                <div class="reset-dot" data-default="1"></div>
+            </div>
+            <div class="slider-container">
+                <div class="slider-label">
+                    <label for="brightnessSlider">Brightness</label>
+                    <span id="brightnessValue" class="slider-value">1.00</span>
+                </div>
+                <input type="range" id="brightnessSlider" class="slider" min="0" max="2" value="1" step="0.01">
+                <div class="reset-dot" data-default="1"></div>
+            </div>
+            <div class="checkbox-container">
+                <input type="checkbox" id="colorPreserve">
+                <label for="colorPreserve">Preserve Color</label>
+                <button id="resetButton">Reset</button>
+            </div>
+            <select id="ditheringMethod">
+                <option value="atkinson">Atkinson</option>
+                <option value="floydSteinberg">Floyd-Steinberg</option>
+                <option value="ordered">Ordered</option>
+                <option value="halftone">Halftone</option>
+            </select>
+            <button id="exportButton">Export</button>
+        </div>
+        <div class="canvas-container">
+            <canvas id="outputCanvas"></canvas>
+            <p>Dithered Image</p>
+        </div>
+        <div class="canvas-container">
+            <canvas id="inputCanvas"></canvas>
+            <p>Original Image</p>
+        </div>
+    </div>
+    <div class="drag-overlay">
+        <div class="drag-message">Drop your image here</div>
+    </div>
+    <a href="https://x.com/istealcode" target="_blank">
+        <img src="twittericon.png" alt="Twitter" class="twitter-icon">
+    </a>
+    <script>
+        const inputCanvas = document.getElementById('inputCanvas');
+        const outputCanvas = document.getElementById('outputCanvas');
+        const inputCtx = inputCanvas.getContext('2d');
+        const outputCtx = outputCanvas.getContext('2d');
+        const imageInput = document.getElementById('imageInput');
+        const scaleSlider = document.getElementById('scaleSlider');
+        const contrastSlider = document.getElementById('contrastSlider');
+        const brightnessSlider = document.getElementById('brightnessSlider');
+        const colorPreserve = document.getElementById('colorPreserve');
+        const ditheringMethod = document.getElementById('ditheringMethod');
+        const exportButton = document.getElementById('exportButton');
+        const resetButton = document.getElementById('resetButton');
+        const dragOverlay = document.querySelector('.drag-overlay');
+        const fileUpload = document.querySelector('.file-upload');
+
+        let originalImage;
+        let zoomLevel = 1;
+        let panX = 0;
+        let panY = 0;
+        let isDragging = false;
+        let lastMouseX, lastMouseY;
+
+        imageInput.addEventListener('change', handleImageUpload);
+        scaleSlider.addEventListener('input', updateImage);
+        contrastSlider.addEventListener('input', updateImage);
+        brightnessSlider.addEventListener('input', updateImage);
+        colorPreserve.addEventListener('change', updateImage);
+        ditheringMethod.addEventListener('change', updateImage);
+        exportButton.addEventListener('click', exportImage);
+        resetButton.addEventListener('click', resetImage);
+
+        // Zoom and pan functionality
+        outputCanvas.addEventListener('wheel', handleZoom);
+        outputCanvas.addEventListener('mousedown', startDrag);
+        outputCanvas.addEventListener('mousemove', drag);
+        outputCanvas.addEventListener('mouseup', endDrag);
+        outputCanvas.addEventListener('mouseleave', endDrag);
+
+        // Drag and drop functionality
+        document.addEventListener('dragenter', showDragOverlay);
+        document.addEventListener('dragleave', hideDragOverlay);
+        document.addEventListener('dragover', preventDefault);
+        document.addEventListener('drop', handleDrop);
+
+        function showDragOverlay(e) {
+            preventDefault(e);
+            dragOverlay.classList.add('active');
+        }
+
+        function hideDragOverlay(e) {
+            preventDefault(e);
+            if (e.relatedTarget === null) {
+                dragOverlay.classList.remove('active');
+            }
+        }
+
+        function preventDefault(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        function handleDrop(e) {
+            preventDefault(e);
+            dragOverlay.classList.remove('active');
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                imageInput.files = e.dataTransfer.files;
+                handleImageUpload({ target: imageInput });
+            }
+        }
+
+        function handleImageUpload(e) {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                originalImage = new Image();
+                originalImage.onload = function() {
+                    resizeCanvases();
+                    updateImage();
+                }
+                originalImage.src = event.target.result;
+            }
+            reader.readAsDataURL(file);
+        }
+
+        function resizeCanvases() {
+            const maxWidth = window.innerWidth * 0.4;
+            const maxHeight = window.innerHeight * 0.8;
+            const scale = Math.min(maxWidth / originalImage.width, maxHeight / originalImage.height);
+
+            inputCanvas.width = outputCanvas.width = originalImage.width * scale;
+            inputCanvas.height = outputCanvas.height = originalImage.height * scale;
+
+            inputCtx.drawImage(originalImage, 0, 0, inputCanvas.width, inputCanvas.height);
+        }
+
+        function updateImage() {
+            if (!originalImage) return;
+
+            const scale = parseFloat(scaleSlider.value);
+            const contrast = parseFloat(contrastSlider.value);
+            const brightness = parseFloat(brightnessSlider.value);
+            const preserveColor = colorPreserve.checked;
+
+            const scaledWidth = Math.floor(inputCanvas.width / scale);
+            const scaledHeight = Math.floor(inputCanvas.height / scale);
+
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = scaledWidth;
+            tempCanvas.height = scaledHeight;
+            const tempCtx = tempCanvas.getContext('2d');
+
+            tempCtx.drawImage(inputCanvas, 0, 0, scaledWidth, scaledHeight);
+            let imageData = tempCtx.getImageData(0, 0, scaledWidth, scaledHeight);
+
+            applyContrastAndBrightness(imageData, contrast, brightness);
+
+            if (!preserveColor) {
+                convertToGrayscale(imageData);
+            }switch (ditheringMethod.value) {
+                case 'floydSteinberg':
+                    floydSteinbergDither(imageData, preserveColor);
+                    break;
+                case 'atkinson':
+                    atkinsonDither(imageData, preserveColor);
+                    break;
+                case 'ordered':
+                    orderedDither(imageData, preserveColor);
+                    break;
+                case 'halftone':
+                    halftoneDither(imageData, preserveColor);
+                    break;
+            }
+
+            tempCtx.putImageData(imageData, 0, 0);
+            outputCtx.imageSmoothingEnabled = false;
+            outputCtx.setTransform(zoomLevel, 0, 0, zoomLevel, panX, panY);
+            outputCtx.clearRect(-panX / zoomLevel, -panY / zoomLevel, outputCanvas.width / zoomLevel, outputCanvas.height / zoomLevel);
+            outputCtx.drawImage(tempCanvas, 0, 0, outputCanvas.width, outputCanvas.height);
+            outputCtx.setTransform(1, 0, 0, 1, 0, 0);
+
+            updateSliderValues();
+        }
+
+        function applyContrastAndBrightness(imageData, contrast, brightness) {
+            const data = imageData.data;
+            for (let i = 0; i < data.length; i += 4) {
+                for (let j = 0; j < 3; j++) {
+                    let value = data[i + j];
+                    value = ((value / 255 - 0.5) * contrast + 0.5) * 255;
+                    value = value * brightness;
+                    data[i + j] = Math.max(0, Math.min(255, value));
+                }
+            }
+        }
+
+        function convertToGrayscale(imageData) {
+            const data = imageData.data;
+            for (let i = 0; i < data.length; i += 4) {
+                const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+                data[i] = data[i + 1] = data[i + 2] = avg;
+            }
+        }
+
+        function floydSteinbergDither(imageData, preserveColor) {
+            const width = imageData.width;
+            const height = imageData.height;
+            const data = imageData.data;
+            const factor = 1/16;
+
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const i = (y * width + x) * 4;
+                    const channels = preserveColor ? 3 : 1;
+                    for (let c = 0; c < channels;c++) {
+                        const oldColor = data[i + c];
+                        const newColor = oldColor < 128 ? 0 : 255;
+                        data[i + c] = newColor;
+                        const error = oldColor - newColor;
+
+                        if (x < width - 1) data[i + 4 + c] += error * 7 * factor;
+                        if (y < height - 1) {
+                            if (x > 0) data[i + width * 4 - 4 + c] += error * 3 * factor;
+                            data[i + width * 4 + c] += error * 5 * factor;
+                            if (x < width - 1) data[i + width * 4 + 4 + c] += error * factor;
+                        }
+                    }
+                    if (!preserveColor) {
+                        data[i + 1] = data[i + 2] = data[i];
+                    }
+                }
+            }
+        }
+
+        function atkinsonDither(imageData, preserveColor) {
+            const width = imageData.width;
+            const height = imageData.height;
+            const data = imageData.data;
+            const factor = 1/8;
+
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const i = (y * width + x) * 4;
+                    const channels = preserveColor ? 3 : 1;
+                    for (let c = 0; c < channels; c++) {
+                        const oldColor = data[i + c];
+                        const newColor = oldColor < 128 ? 0 : 255;
+                        data[i + c] = newColor;
+                        const error = oldColor - newColor;
+
+                        if (x < width - 1) data[i + 4 + c] += error * factor;
+                        if (x < width - 2) data[i + 8 + c] += error * factor;
+                        if (y < height - 1) {
+                            data[i + width * 4 + c] += error * factor;
+                            if (x > 0) data[i + width * 4 - 4 + c] += error * factor;
+                            if (x < width - 1) data[i + width * 4 + 4 + c] += error * factor;
+                        }
+                        if (y < height - 2) data[i + width * 8 + c] += error * factor;
+                    }
+                    if (!preserveColor) {
+                        data[i + 1] = data[i + 2] = data[i];
+                    }
+                }
+            }
+        }
+
+        function orderedDither(imageData, preserveColor) {
+            const width = imageData.width;
+            const height = imageData.height;
+            const data = imageData.data;
+            const matrix = [
+                [0, 8, 2, 10],
+                [12, 4, 14, 6],
+                [3, 11, 1, 9],
+                [15, 7, 13, 5]
+            ];
+
+            for (let y = 0; y < height; y++) {
+                for (let x = 0; x < width; x++) {
+                    const i = (y * width + x) * 4;
+                    const threshold = (matrix[y % 4][x % 4] + 1) / 17;
+                    const channels = preserveColor ? 3 : 1;
+                    for (let c = 0; c < channels; c++) {
+                        const oldColor = data[i + c] / 255;
+                        data[i + c] = oldColor > threshold ? 255 : 0;
+                    }
+                    if (!preserveColor) {
+                        data[i + 1] = data[i + 2] = data[i];
+                    }
+                }
+            }
+        }
+
+        function halftoneDither(imageData, preserveColor) {
+            const width = imageData.width;
+            const height = imageData.height;
+            const data = imageData.data;
+            const dotSize = 4;
+
+            for (let y = 0; y < height; y += dotSize) {
+                for (let x = 0; x < width; x += dotSize) {
+                    let totalBrightness = [0, 0, 0];
+                    let count = 0;
+
+                    // Calculate average brightness for the dot area
+                    for (let dy = 0; dy < dotSize && y + dy < height; dy++) {
+                        for (let dx = 0; dx < dotSize && x + dx < width; dx++) {
+                            const i = ((y + dy) * width + (x + dx)) * 4;
+                            for (let c = 0; c < 3; c++) {
+                                totalBrightness[c] += data[i + c];
+                            }
+                            count++;
+                        }
+                    }
+
+                    const avgBrightness = totalBrightness.map(b => b / count);
+                    const dotRadius = preserveColor
+                        ? avgBrightness.map(b => Math.sqrt(b / 255) * dotSize / 2)
+                        : [Math.sqrt((avgBrightness[0] + avgBrightness[1] + avgBrightness[2]) / (3 * 255)) * dotSize / 2];
+
+                    // Draw the dot
+                    for (let dy = 0; dy < dotSize && y + dy < height; dy++) {
+                        for (let dx = 0; dx < dotSize && x + dx < width; dx++) {
+                            const distance = Math.sqrt(Math.pow(dx - dotSize / 2, 2) + Math.pow(dy - dotSize / 2, 2));
+                            const i = ((y + dy) * width + (x + dx)) * 4;
+                            if (preserveColor) {
+                                for (let c = 0; c < 3; c++) {
+                                    data[i + c] = distance <= dotRadius[c] ? 0 : 255;
+                                }
+                            } else {
+                                const color = distance <= dotRadius[0] ? 0 : 255;
+                                data[i] = data[i + 1] = data[i + 2] = color;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        function exportImage() {
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = outputCanvas.width;
+            tempCanvas.height = outputCanvas.height;
+            const tempCtx = tempCanvas.getContext('2d');
+
+            // Apply the current dithering settings to the full image
+            const scale = parseFloat(scaleSlider.value);
+            const contrast = parseFloat(contrastSlider.value);
+            const brightness = parseFloat(brightnessSlider.value);
+            const preserveColor = colorPreserve.checked;
+
+            tempCtx.drawImage(originalImage, 0, 0, tempCanvas.width, tempCanvas.height);
+            let imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+
+            applyContrastAndBrightness(imageData, contrast, brightness);
+
+            if (!preserveColor) {
+                convertToGrayscale(imageData);
+            }
+
+            switch (ditheringMethod.value) {
+                case 'floydSteinberg':
+                    floydSteinbergDither(imageData, preserveColor);
+                    break;
+                case 'atkinson':
+                    atkinsonDither(imageData, preserveColor);
+                    break;
+                case 'ordered':
+                    orderedDither(imageData, preserveColor);
+                    break;
+                case 'halftone':
+                    halftoneDither(imageData, preserveColor);
+                    break;
+            }
+
+            tempCtx.putImageData(imageData, 0, 0);
+            
+            const link = document.createElement('a');
+            link.download = 'dithered_image.png';
+            link.href = tempCanvas.toDataURL();
+            link.click();
+        }
+
+        function resetImage() {
+            if (originalImage) {
+                scaleSlider.value = 1;
+                contrastSlider.value = 1;
+                brightnessSlider.value = 1;
+                colorPreserve.checked = false;
+                ditheringMethod.value = 'atkinson';
+                zoomLevel = 1;
+                panX = 0;
+                panY = 0;
+                updateSliderValues();
+                updateImage();
+            }
+        }
+
+        function updateSliderValues() {
+            document.getElementById('scaleValue').textContent = parseFloat(scaleSlider.value).toFixed(1);
+            document.getElementById('contrastValue').textContent = parseFloat(contrastSlider.value).toFixed(2);
+            document.getElementById('brightnessValue').textContent = parseFloat(brightnessSlider.value).toFixed(2);
+
+            // Show/hide reset dots
+            document.querySelectorAll('.slider').forEach(slider => {
+                const dot = slider.nextElementSibling;
+                dot.style.display = slider.value !== slider.getAttribute('value') ? 'block' : 'none';
+            });
+        }
+
+        // Reset dots functionality
+        document.querySelectorAll('.reset-dot').forEach(dot => {
+            dot.addEventListener('click', () => {
+                const slider = dot.previousElementSibling;
+                slider.value = dot.getAttribute('data-default');
+                updateSliderValues();
+                updateImage();
+            });
+        });
+
+        function handleZoom(e) {
+            e.preventDefault();
+            const rect = outputCanvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            const wheelDelta = e.deltaY;
+            const zoomFactor = wheelDelta > 0 ? 0.9 : 1.1;
+
+            zoomLevel *= zoomFactor;
+            zoomLevel = Math.max(0.1, Math.min(zoomLevel, 10));
+
+            panX = mouseX - (mouseX - panX) * zoomFactor;
+            panY = mouseY - (mouseY - panY) * zoomFactor;
+
+            updateImage();
+        }
+
+        function startDrag(e) {
+            isDragging = true;
+            lastMouseX = e.clientX;
+            lastMouseY = e.clientY;
+        }
+
+        function drag(e) {
+            if (isDragging) {
+                const deltaX = e.clientX - lastMouseX;
+                const deltaY = e.clientY - lastMouseY;
+                panX += deltaX;
+                panY += deltaY;
+                lastMouseX = e.clientX;
+                lastMouseY = e.clientY;
+                updateImage();
+            }
+        }
+
+        function endDrag() {
+            isDragging = false;
+        }
+
+        window.addEventListener('resize', () => {
+            if (originalImage) {
+                resizeCanvases();
+                updateImage();
+            }
+        });
+    </script>
+</body>
+</html>
